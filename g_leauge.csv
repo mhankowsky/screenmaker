@@ -1,7 +1,0 @@
-Screen_Name,Tile_Type,Tile_W,Tile_H,Tiles_Wide,Tiles_High,Pixels_W,Pixels_H,Physical W,Physical H
-Home-Baseline,bp3,128,128,6,2,768,256,19.8,3
-Home-Bench,bp3,128,128,6,2,768,256,19.8,3
-Scorers Table,bp3,128,128,18,2,2304,256,36.6,3
-Away-Bench,bp3,128,128,6,2,768,256,6.6,1.2
-Away-Baseline,bp3,128,128,6,2,768,256,6.6,1.2
-stanchion,dak,144,48,1,1,144,44,1,1
