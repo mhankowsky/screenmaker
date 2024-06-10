@@ -36,6 +36,7 @@ class Screen:
     def draw_eng(self):
         self.resetImg()
         self.draw_tiles()
+        self.draw_screen_text()
         self.im.save(self.path / "Eng" / (self.name+".png"))
         pass
 
@@ -49,6 +50,8 @@ class Screen:
 
     def draw_stealth(self):
         self.resetImg()
+        self.drawBG((0,0,0), (76,185,227))
+        self.im.save(self.path / 'Stealth' / (self.name+".png"))
         pass
 
     def draw_pretty(self):
@@ -118,6 +121,7 @@ def test():
     #Make Dirs... This will need to change 
     os.makedirs(root_dir / 'testing' / 'Content', exist_ok=True)
     os.makedirs(root_dir / 'testing' / 'Eng', exist_ok=True)
+    os.makedirs(root_dir / 'testing' / 'Stealth', exist_ok=True)
 
     path = root_dir / 'testing'
     testing = Screen("USC", path, 80, 160, 11, 8)
@@ -126,6 +130,7 @@ def test():
 
     testing.draw_content()
     testing.draw_eng()
+    testing.draw_stealth()
 
         
 
