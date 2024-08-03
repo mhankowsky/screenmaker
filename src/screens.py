@@ -14,7 +14,7 @@ blue = (0,0,255)
 root_dir = Path(__file__).resolve().parent.parent
 
 #Set default font 
-ImageDraw.ImageDraw.font = ImageFont.truetype("../lib/font/RobotoMono-Light.ttf")
+ImageDraw.ImageDraw.font = ImageFont.truetype("lib/font/RobotoMono-Light.ttf")
 
 class Screen: 
     def __init__(self, name, path, tile_width, tile_height, tiles_w, tiles_h ) -> None:
@@ -71,7 +71,7 @@ class Screen:
         cur_y = 0
 
         font_size = int(min(self.height,self.width)/6)
-        font = ImageFont.truetype("../lib/font/RobotoMono-Light.ttf", font_size)
+        #font = ImageFont.truetype("../lib/font/RobotoMono-Light.ttf", font_size)
 
         for i in range(math.ceil(self.tiles_h)):
             for j in range(self.tiles_w):
@@ -91,15 +91,17 @@ class Screen:
     def draw_screen_text(self):
         res_text = str(self.width) + "x" + str(self.height)
         #calculate font size
-        font_size = int(min(self.height,self.width)/max(len(self.name),len(res_text)))
+        font = self.draw.getfont()
 
-        font = ImageFont.truetype("../lib/font/RobotoMono-Light.ttf", font_size)
+        text_width,text_height = self.get_text_dimensions(res_text, font)
+        #font_size = int(min(self.height,self.width)/max(len(self.name),len(res_text)))
+
 
         #Draw Screen Name
-        self.draw.text((self.width/2,self.height/2), self.name, font=font, fill=(255,255,255), anchor='md')
+        self.draw.text((self.width/2,self.height/2), self.name, fill=(255,255,255), anchor='md')
 
         #Draw Resolution
-        self.draw.text((self.width/2,self.height/2), res_text, font=font, fill=(255,255,255), anchor='mt')
+        self.draw.text((self.width/2,self.height/2), res_text, fill=(255,255,255), anchor='mt')
 
     def get_text_dimensions(self, text_string, font):
     # https://stackoverflow.com/a/46220683/9263761
@@ -124,7 +126,7 @@ def test():
     os.makedirs(root_dir / 'testing' / 'Stealth', exist_ok=True)
 
     path = root_dir / 'testing'
-    testing = Screen("USC", path, 80, 160, 11, 8)
+    testing = Screen("Ceiling", path, 144, 144, 18, 12)
 
     
 
