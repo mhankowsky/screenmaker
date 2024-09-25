@@ -1,4 +1,4 @@
-import os, sys, math
+import os, sys, math, colorsys, csv, logging
 from unicodedata import name 
 from pathlib import Path
 from PIL import Image, ImageFont, ImageDraw
@@ -8,6 +8,8 @@ gray2 = (10,10,10)
 gray3 = (130,130,130)
 red =  (255, 0, 0)
 blue = (0,0,255)
+
+logger = logging.getLogger(__name__)
 
 #Root Dir 
 
@@ -26,6 +28,7 @@ class Screen:
         self.tile_height = tile_height
         self.tiles_w = tiles_w
         self.tiles_h = tiles_h
+        self.colorBGHue = 0
         self.colorA = blue
         self.colorB = red
         self.im = Image.new("RGB", (self.width, self.height), 0)
@@ -110,9 +113,55 @@ class Screen:
 
         return (text_width, text_height)
 
+    def hsv_to_rgb(self, h,s,v):
+        rgb_fraction = colorsys.hsv_to_rgb(h / 360, s / 100, v / 100)  # colorsys expects HSV in the range [0, 1]
+        rgb = tuple(int(i * 255) for i in rgb_fraction)  # Scale to [0, 255]
+        return rgb
+
 class ScreenList:
-    def __init__(self) -> None:
-     pass
+    def __init__(self, csv_path) -> None:
+     
+     self.screens = self.parse_csv_with_header(csv_path)
+
+
+    
+
+    def parse_csv_with_header(self, csv_path):
+    # Define the expected header
+        expected_header = ("WALL,Naming,Notes,Product,Tiles_Wide,Tiles_High,Total Tiles,,"
+                       "Pitch (mm),,Tile MM Width,Tile MM Height,Tile_Px_Width,"
+                       "Tile_Px_Height,,Screen Native Px Width,Screen Native Px Height,,"
+                       "Total Pixels ,% of a 4K Raster,# Outputs,Screen Aspect,Screen M Width,"
+                       "Screen M Height,,,,AE MAP SCALED WIDTH,AE MAP SCALED HEIGHT,"
+                       "AE SCALE FACTOR W,AE SCALE FACTOR H,Scaled Pitch")
+
+        # Initialize a list to hold the parsed data
+        parsed_data = []
+
+        # Open the CSV file
+        with open(csv_path, mode='r', encoding='utf-8') as file:
+         # Read the first line to check the header
+            first_line = file.readline().strip()
+        
+            # Check if the header matches
+            if first_line == expected_header:
+                # Use csv.reader to parse the rest of the file
+                csv_reader = csv.reader(file)
+                for row in csv_reader:
+                    parsed_data.append(row)  # Add each row to the parsed_data list
+            else:
+                print("Header does not match the expected format.")
+                return None
+
+        # Return the parsed data
+        return parsed_data
+
+
+
+
+    def assert_csv_format(self, csv_path):
+        
+            
 
 
 def test():
