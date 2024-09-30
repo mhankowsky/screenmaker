@@ -16,12 +16,11 @@ logger = logging.getLogger(__name__)
 root_dir = Path(__file__).resolve().parent.parent
 
 #Set default font 
-ImageDraw.ImageDraw.font = ImageFont.truetype("../lib/font/RobotoMono-Light.ttf")
+ImageDraw.ImageDraw.font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf')
 
 class Screen: 
-    def __init__(self, name, path, tile_width, tile_height, tiles_w, tiles_h ) -> None:
+    def __init__(self, name, tile_width, tile_height, tiles_w, tiles_h ) -> None:
         self.name = name
-        self.path = path
         self.width = int(tile_width * tiles_w) 
         self.height = int(tile_height * tiles_h)
         self.tile_width = tile_width
@@ -29,11 +28,25 @@ class Screen:
         self.tiles_w = tiles_w
         self.tiles_h = tiles_h
         self.colorBGHue = 0
+        empty_2d_array = [[None for _ in range(self.tiles_w)] for _ in range(self.tiles_h)]
+
+
+class ScreenDrawer:
+    def __init__(self, screen: Screen, path) -> None:
+        self.screen = screen
+        self.path = path
+        self.name = screen.name
+        self.width = int(screen.tile_width * screen.tiles_w) 
+        self.height = int(screen.tile_height * screen.tiles_h)
+        self.tile_width = screen.tile_width
+        self.tile_height = screen.tile_height
+        self.tiles_w = screen.tiles_w
+        self.tiles_h = screen.tiles_h
+        self.colorBGHue = screen.colorBGHue
         self.colorA = blue
         self.colorB = red
         self.im = Image.new("RGB", (self.width, self.height), 0)
         self.draw = ImageDraw.Draw(self.im)
-
 
 
     def draw_eng(self):
@@ -74,7 +87,7 @@ class Screen:
         cur_y = 0
 
         font_size = int(min(self.height,self.width)/6)
-        font = ImageFont.truetype("../lib/font/RobotoMono-Light.ttf", font_size)
+        font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf', font_size)
 
         for i in range(math.ceil(self.tiles_h)):
             for j in range(self.tiles_w):
@@ -96,7 +109,7 @@ class Screen:
         #calculate font size
         font_size = int(min(self.height,self.width)/max(len(self.name),len(res_text)))
 
-        font = ImageFont.truetype("../lib/font/RobotoMono-Light.ttf", font_size)
+        font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf', font_size)
 
         #Draw Screen Name
         self.draw.text((self.width/2,self.height/2), self.name, font=font, fill=(255,255,255), anchor='md')
@@ -121,51 +134,76 @@ class Screen:
 class ScreenList:
     def __init__(self, csv_path) -> None:
      
-     self.screens = self.parse_csv_with_header(csv_path)
-
-
-    
+     self.rawScreens = self.parse_csv_with_header(csv_path)
+     self.screens = []
 
     def parse_csv_with_header(self, csv_path):
-    # Define the expected header
-        expected_header = ("WALL,Naming,Notes,Product,Tiles_Wide,Tiles_High,Total Tiles,,"
-                       "Pitch (mm),,Tile MM Width,Tile MM Height,Tile_Px_Width,"
-                       "Tile_Px_Height,,Screen Native Px Width,Screen Native Px Height,,"
-                       "Total Pixels ,% of a 4K Raster,# Outputs,Screen Aspect,Screen M Width,"
-                       "Screen M Height,,,,AE MAP SCALED WIDTH,AE MAP SCALED HEIGHT,"
-                       "AE SCALE FACTOR W,AE SCALE FACTOR H,Scaled Pitch")
+    # Define the expected header as a tuple of column names
+        expected_header = (
+            "WALL", "Naming", "Notes", "Product", "Tiles_Wide", "Tiles_High", 
+            "Total Tiles", "Pitch (mm)", "Tile MM Width", "Tile MM Height", 
+            "Tile_Px_Width", "Tile_Px_Height"
+        )
 
         # Initialize a list to hold the parsed data
         parsed_data = []
 
-        # Open the CSV file
-        with open(csv_path, mode='r', encoding='utf-8') as file:
-         # Read the first line to check the header
-            first_line = file.readline().strip()
-        
-            # Check if the header matches
-            if first_line == expected_header:
-                # Use csv.reader to parse the rest of the file
+        try:
+            # Open the CSV file
+            with open(csv_path, mode='r', encoding='utf-8') as file:
+                # Use csv.reader to parse the file
                 csv_reader = csv.reader(file)
+
+                # Flag to determine when we've found the header
+                header_found = False
+
+                # Scan through the file to find the header
                 for row in csv_reader:
-                    parsed_data.append(row)  # Add each row to the parsed_data list
-            else:
-                print("Header does not match the expected format.")
-                return None
+                    if row[:len(expected_header)] == list(expected_header):
+                        header_found = True
+                        naming_index = row.index("WALL")
+                        break  # Break the loop once the header is found
+                
+                    if header_found:
+                    # Use csv.DictReader to handle the rows as dictionaries
+                        file.seek(0)  # Reset file pointer to start after finding header
+                        dict_reader = csv.DictReader(file)
+
+                        # Skip rows until the header is found again by DictReader
+                        for row in dict_reader:
+                            if list(row.keys())[:len(expected_header)] == list(expected_header):
+                                break
+
+                        # Now, iterate through the remaining rows as dictionaries
+                        for row in dict_reader:
+                            # Exclude rows where the "Naming" column is empty
+                            if row["WALL"].strip():  # Check if "Naming" value is non-empty
+                                self.screens.append(
+                                    Screen(row["WALL"], row['Tile_Px_Width'],row['Tile_Px_Height'],row['Tiles_Wide'],row['Tiles_Heigh'])
+                                    )
+                                
+                else:
+                    print("Expected header not found in the file.")
+                    return None
+
+        except FileNotFoundError:
+            print(f"Error: File '{csv_path}' not found.")
+            return None
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
 
         # Return the parsed data
         return parsed_data
-
-
-
-
-    def assert_csv_format(self, csv_path):
-        
             
 
 
 def test():
     print(root_dir)
+
+    csvTest = ScreenList(root_dir / 'temp' / 'testcsv.csv')
+
+    print(csvTest.rawScreens)
     
     #Make Dirs... This will need to change 
     os.makedirs(root_dir / 'testing' / 'Content', exist_ok=True)
@@ -173,7 +211,8 @@ def test():
     os.makedirs(root_dir / 'testing' / 'Stealth', exist_ok=True)
 
     path = root_dir / 'testing'
-    testing = Screen("USC", path, 80, 160, 11, 8)
+    testScreen = Screen("USC", 80, 160, 11, 8)
+    testing = ScreenDrawer(testScreen,path)
 
     
 
