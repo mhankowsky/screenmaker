@@ -107,15 +107,18 @@ class ScreenDrawer:
     def draw_screen_text(self):
         res_text = str(self.width) + "x" + str(self.height)
         #calculate font size
+        font = self.draw.getfont()
+
+        text_width,text_height = self.get_text_dimensions(res_text, font)
         font_size = int(min(self.height,self.width)/max(len(self.name),len(res_text)))
 
         font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf', font_size)
 
         #Draw Screen Name
-        self.draw.text((self.width/2,self.height/2), self.name, font=font, fill=(255,255,255), anchor='md')
+        self.draw.text((self.width/2,self.height/2), self.name, fill=(255,255,255), anchor='md')
 
         #Draw Resolution
-        self.draw.text((self.width/2,self.height/2), res_text, font=font, fill=(255,255,255), anchor='mt')
+        self.draw.text((self.width/2,self.height/2), res_text, fill=(255,255,255), anchor='mt')
 
     def get_text_dimensions(self, text_string, font):
     # https://stackoverflow.com/a/46220683/9263761
