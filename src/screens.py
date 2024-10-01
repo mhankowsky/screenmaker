@@ -19,7 +19,7 @@ root_dir = Path(__file__).resolve().parent.parent
 ImageDraw.ImageDraw.font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf')
 
 class Screen: 
-    def __init__(self, name, tile_width, tile_height, tiles_w, tiles_h ) -> None:
+    def __init__(self, name, tile_width, tile_height, tiles_w, tiles_h) -> None:
         self.name = name
         self.width = int(tile_width * tiles_w) 
         self.height = int(tile_height * tiles_h)
@@ -86,13 +86,16 @@ class ScreenDrawer:
         cur_x = 0
         cur_y = 0
 
+        BG_A = self.hsv_to_rgb(self.colorBGHue, 100, 30)
+        BG_B = self.hsv_to_rgb(self.colorBGHue, 100, 15)
+
         font_size = int(min(self.height,self.width)/6)
         font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf', font_size)
 
         for i in range(math.ceil(self.tiles_h)):
             for j in range(self.tiles_w):
                 tile_y_height = math.ceil(self.tile_height/2) if (self.tiles_h-i == 0.5) else self.tile_height;
-                BG_color = gray if (j+i)%2 == 0 else gray2
+                BG_color = BG_A if (j+i)%2 == 0 else BG_B
                 stoke = red if (j+i)%2 == 0 else blue
 
                 self.draw.rectangle((cur_x, cur_y, cur_x+(self.tile_width-1), cur_y+(tile_y_height-1)), BG_color,stoke,1)
@@ -109,16 +112,17 @@ class ScreenDrawer:
         #calculate font size
         font = self.draw.getfont()
 
-        text_width,text_height = self.get_text_dimensions(res_text, font)
         font_size = int(min(self.height,self.width)/max(len(self.name),len(res_text)))
+
+        print("FontSize:"+str(font_size))
 
         font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf', font_size)
 
         #Draw Screen Name
-        self.draw.text((self.width/2,self.height/2), self.name, fill=(255,255,255), anchor='md')
+        self.draw.text((self.width/2,self.height/2), self.name.strip(), font=font, fill=(255,255,255), anchor='md')
 
         #Draw Resolution
-        self.draw.text((self.width/2,self.height/2), res_text, fill=(255,255,255), anchor='mt')
+        self.draw.text((self.width/2,self.height/2), res_text, font=font, fill=(255,255,255), anchor='ma')
 
     def get_text_dimensions(self, text_string, font):
     # https://stackoverflow.com/a/46220683/9263761
@@ -136,12 +140,14 @@ class ScreenDrawer:
 
 class ScreenList:
     def __init__(self, csv_path) -> None:
-     
-     self.rawScreens = self.parse_csv_with_header(csv_path)
-     self.screens = []
+        # Initialize the screens list
+        self.screens = []
+        self.rawScreens = self.parse_csv_with_header(csv_path)
+        self.setBGColors()
+
 
     def parse_csv_with_header(self, csv_path):
-    # Define the expected header as a tuple of column names
+        # Define the expected header as a tuple of column names
         expected_header = (
             "WALL", "Naming", "Notes", "Product", "Tiles_Wide", "Tiles_High", 
             "Total Tiles", "Pitch (mm)", "Tile MM Width", "Tile MM Height", 
@@ -152,42 +158,53 @@ class ScreenList:
         parsed_data = []
 
         try:
-            # Open the CSV file
+            # First, open the file to find the header and track the index
+            header_index = -1
             with open(csv_path, mode='r', encoding='utf-8') as file:
-                # Use csv.reader to parse the file
                 csv_reader = csv.reader(file)
 
-                # Flag to determine when we've found the header
-                header_found = False
-
-                # Scan through the file to find the header
-                for row in csv_reader:
+                # Track the current line number
+                for i, row in enumerate(csv_reader):
+                    # Check if the current row matches the expected header
                     if row[:len(expected_header)] == list(expected_header):
-                        header_found = True
-                        naming_index = row.index("WALL")
-                        break  # Break the loop once the header is found
-                
-                    if header_found:
-                    # Use csv.DictReader to handle the rows as dictionaries
-                        file.seek(0)  # Reset file pointer to start after finding header
-                        dict_reader = csv.DictReader(file)
+                        header_index = i
+                        break
 
-                        # Skip rows until the header is found again by DictReader
-                        for row in dict_reader:
-                            if list(row.keys())[:len(expected_header)] == list(expected_header):
-                                break
+            if header_index != -1:
+                # Now reopen the file and skip to the header_index
+                with open(csv_path, mode='r', encoding='utf-8') as file:
+                    csv_reader = csv.reader(file)
 
-                        # Now, iterate through the remaining rows as dictionaries
-                        for row in dict_reader:
-                            # Exclude rows where the "Naming" column is empty
-                            if row["WALL"].strip():  # Check if "Naming" value is non-empty
+                    # Skip rows until we reach the header
+                    for _ in range(header_index):
+                        next(csv_reader)
+
+                    # Initialize DictReader from this point
+                    dict_reader = csv.DictReader(file)
+                    print("------Dict Reader Initialized with Fieldnames------")
+                    print(dict_reader.fieldnames)
+
+                    # Now, iterate through the remaining rows as dictionaries
+                    for row in dict_reader:
+                        # Only process rows where the "WALL" column is non-empty
+                        if row["WALL"].strip():
+                            print(f"Adding screen with name: {row['WALL']}")
+                            try:
                                 self.screens.append(
-                                    Screen(row["WALL"], row['Tile_Px_Width'],row['Tile_Px_Height'],row['Tiles_Wide'],row['Tiles_Heigh'])
+                                    Screen(
+                                        row["WALL"],  # WALL (screen name)
+                                        int(row['Tile_Px_Width']),  # Tile_Px_Width as int
+                                        int(row['Tile_Px_Height']),  # Tile_Px_Height as int
+                                        int(row['Tiles_Wide']),  # Tiles_Wide as int
+                                        int(row['Tiles_High'])  # Tiles_High as int
                                     )
-                                
-                else:
-                    print("Expected header not found in the file.")
-                    return None
+                                )
+                            except ValueError as e:
+                                print(f"Skipping row due to value error: {e}")
+
+            else:
+                print("Expected header not found in the file.")
+                return None
 
         except FileNotFoundError:
             print(f"Error: File '{csv_path}' not found.")
@@ -196,32 +213,34 @@ class ScreenList:
             print(f"An error occurred: {e}")
             return None
 
-        # Return the parsed data
-        return parsed_data
-            
+    def setBGColors(self):
+        coloroffset = int( 360 / len(self.screens))
+        curcol = 0
+        i : Screen
+        for i in self.screens:
+            i.colorBGHue = curcol
+            curcol = curcol + coloroffset
 
 
 def test():
     print(root_dir)
-
-    csvTest = ScreenList(root_dir / 'temp' / 'testcsv.csv')
-
-    print(csvTest.rawScreens)
-    
     #Make Dirs... This will need to change 
     os.makedirs(root_dir / 'testing' / 'Content', exist_ok=True)
     os.makedirs(root_dir / 'testing' / 'Eng', exist_ok=True)
     os.makedirs(root_dir / 'testing' / 'Stealth', exist_ok=True)
 
-    path = root_dir / 'testing'
-    testScreen = Screen("USC", 80, 160, 11, 8)
-    testing = ScreenDrawer(testScreen,path)
+    path = root_dir / 'testing'    
 
-    
+    List = ScreenList(root_dir / 'temp' / 'LP.csv')
+    print(List.screens)
 
-    testing.draw_content()
-    testing.draw_eng()
-    testing.draw_stealth()
+    for i in List.screens: 
+        
+        print(i.name)
+        testing = ScreenDrawer(i,path)
+        testing.draw_content()
+        testing.draw_eng()
+        testing.draw_stealth()
 
         
 
