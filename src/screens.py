@@ -1,4 +1,4 @@
-import os, sys, math, colorsys, csv, logging
+import os, sys, math, colorsys, csv, logging, re
 from unicodedata import name 
 from pathlib import Path
 from PIL import Image, ImageFont, ImageDraw
@@ -47,13 +47,14 @@ class ScreenDrawer:
         self.colorB = red
         self.im = Image.new("RGB", (self.width, self.height), 0)
         self.draw = ImageDraw.Draw(self.im)
+        self.filename = self.sanitize_filename(self.name)
 
 
     def draw_eng(self):
         self.resetImg()
         self.draw_tiles()
         self.draw_screen_text()
-        self.im.save(self.path / "Eng" / (self.name+".png"))
+        self.im.save(self.path / '02_Eng_Blocks' / (self.name+".png"))
         pass
 
 
@@ -61,13 +62,13 @@ class ScreenDrawer:
         self.resetImg()
         self.drawBG(gray, red)
         self.draw_screen_text()
-        self.im.save(self.path / 'Content' / (self.name+".png"))
+        self.im.save(self.path / '01_Content_Blocks' / (self.name+".png"))
         pass
 
     def draw_stealth(self):
         self.resetImg()
         self.drawBG((0,0,0), (76,185,227))
-        self.im.save(self.path / 'Stealth' / (self.name+".png"))
+        self.im.save(self.path / '03_Stealth_Blocks' / (self.name+".png"))
         pass
 
     def draw_pretty(self):
@@ -137,6 +138,36 @@ class ScreenDrawer:
         rgb_fraction = colorsys.hsv_to_rgb(h / 360, s / 100, v / 100)  # colorsys expects HSV in the range [0, 1]
         rgb = tuple(int(i * 255) for i in rgb_fraction)  # Scale to [0, 255]
         return rgb
+
+    def sanitize_filename(self, filename, max_length=255):
+        """
+        Replace invalid characters in a string to make it a valid filename for both Windows and macOS.
+        """
+        # Define invalid characters for both systems
+        invalid_chars = r'[<>:"/\\|?*\x00-\x1F]'  # Windows forbidden chars + ASCII control chars
+        invalid_mac_char = r'[:]'  # macOS forbidden chars
+
+        # Replace invalid characters with an underscore
+        sanitized = re.sub(invalid_chars, '_', filename)
+        sanitized = re.sub(invalid_mac_char, '_', sanitized)
+
+        # Strip leading and trailing whitespace
+        sanitized = sanitized.strip()
+
+        # Handle reserved names in Windows by appending an underscore if needed
+        reserved_windows_names = {
+            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", 
+            "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", 
+            "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        }
+        if sanitized.upper() in reserved_windows_names:
+            sanitized += '_'
+
+        # Truncate the filename to the maximum allowable length
+        if len(sanitized) > max_length:
+            sanitized = sanitized[:max_length]
+
+        return sanitized
 
 class ScreenList:
     def __init__(self, csv_path) -> None:
@@ -224,15 +255,17 @@ class ScreenList:
 
 def test():
     print(root_dir)
-    #Make Dirs... This will need to change 
-    os.makedirs(root_dir / 'testing' / 'Content', exist_ok=True)
-    os.makedirs(root_dir / 'testing' / 'Eng', exist_ok=True)
-    os.makedirs(root_dir / 'testing' / 'Stealth', exist_ok=True)
+    #Make Dirs... This will need to change
+    csv_path = root_dir / 'temp' / 'LP.csv'
+    filename = os.path.basename(csv_path).split('.')[0]
+    path = root_dir / 'testing' / filename
 
-    path = root_dir / 'testing'    
-
-    List = ScreenList(root_dir / 'temp' / 'LP.csv')
+    List = ScreenList(csv_path)
     print(List.screens)
+
+    os.makedirs(root_dir / 'testing' / filename / '01_Content_Blocks', exist_ok=True)
+    os.makedirs(root_dir / 'testing' / filename/ '02_Eng_Blocks', exist_ok=True)
+    os.makedirs(root_dir / 'testing' / filename/ '03_Stealth_Blocks', exist_ok=True)
 
     for i in List.screens: 
         
