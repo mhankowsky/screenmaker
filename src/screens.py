@@ -276,5 +276,5 @@ def test():
         testing.draw_stealth()
 
         
-
-test()
+if __name__ == "__main__":
+    test()

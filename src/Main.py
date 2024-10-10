@@ -1,10 +1,12 @@
 import sys
+from pathlib import Path
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QTabWidget, QVBoxLayout, 
     QPushButton, QLabel, QFileDialog, QHBoxLayout
 )
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
+import screens
 
 class ImageViewer(QWidget):
     def __init__(self, image_path, parent=None):
@@ -16,7 +18,7 @@ class ImageViewer(QWidget):
         label = QLabel(self)
         pixmap = QPixmap(image_path)
         label.setPixmap(pixmap)
-        #label.setAlignment(Qt.AlignmentFlag())
+        #label.setAlignment(Qt.AlignCenter)
         
         layout.addWidget(label)
 
@@ -25,7 +27,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Main layout
-        self.setWindowTitle("Image Viewer and File Selector")
+        self.setWindowTitle("F9 RasterMakker")
         self.setGeometry(100, 100, 800, 600)
 
         # Create central widget and layout
@@ -60,23 +62,23 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.tab_widget)
 
         # Initialize paths for validation
-        self.csv_file_path = None
-        self.output_folder_path = None
+        self.csv_file_path = Path
+        self.output_folder_path = Path
 
     def select_csv_file(self):
         # Open a file dialog to select a CSV file
         csv_file, _ = QFileDialog.getOpenFileName(self, "Select CSV File", "", "CSV Files (*.csv)")
         if csv_file:
-            self.csv_file_path = csv_file
-            print(f"Selected CSV file: {csv_file}")
+            self.csv_file_path = Path(csv_file)  # Store as Path object
+            print(f"Selected CSV file: {self.csv_file_path}")
             self.check_run_button_enabled()
 
     def select_output_folder(self):
         # Open a dialog to select an output folder
         folder = QFileDialog.getExistingDirectory(self, "Select Output Folder")
         if folder:
-            self.output_folder_path = folder
-            print(f"Selected output folder: {folder}")
+            self.output_folder_path = Path(folder)  # Store as Path object
+            print(f"Selected output folder: {self.output_folder_path}")
             self.check_run_button_enabled()
 
     def check_run_button_enabled(self):
@@ -88,16 +90,55 @@ class MainWindow(QMainWindow):
 
     def run_image_creation(self):
         # This is where the main logic for creating images will go
-        # For now, just a placeholder action
         print("Running the main loop to create images...")
-        # Example: Add tabs with placeholder images (you can replace with your actual logic)
-        self.add_image_tab("/path/to/your/image1.jpg")
-        self.add_image_tab("/path/to/your/image2.png")
+        
+        # Ensure output folder exists
+        if not self.output_folder_path.exists():
+            print(f"Output folder does not exist: {self.output_folder_path}")
+            return
+        
+        # Prepare output directories
+        csv_path = self.csv_file_path
+        filename = csv_path.stem  # Get the CSV filename without extension
+        base_output_path = self.output_folder_path / filename
+
+        # List of screens
+        screen_list = screens.ScreenList(csv_path)
+        print(screen_list.screens)
+
+        # Create necessary directories
+        (base_output_path / '01_Content_Blocks').mkdir(parents=True, exist_ok=True)
+        (base_output_path / '02_Eng_Blocks').mkdir(parents=True, exist_ok=True)
+        (base_output_path / '03_Stealth_Blocks').mkdir(parents=True, exist_ok=True)
+
+        # Process each screen
+        for screen in screen_list.screens:
+            print(screen.name)
+
+            # Assuming ScreenDrawer creates images for each screen
+            drawer = screens.ScreenDrawer(screen, base_output_path)
+            drawer.draw_content()
+            drawer.draw_eng()
+            drawer.draw_stealth()
+
+            # Assuming the `ScreenDrawer` has a method that gives us the output image paths
+            # Add each image as a tab (update with actual image path after drawing)
+            content_image = base_output_path / '01_Content_Blocks' / f"{screen.name}.png"
+            eng_image = base_output_path / '02_Eng_Blocks' / f"{screen.name}.png"
+            stealth_image = base_output_path / '03_Stealth_Blocks' / f"{screen.name}.png"
+
+            # Add the images to the tab viewer (assuming they exist after generation)
+            self.add_image_tab(str(content_image))
+            self.add_image_tab(str(eng_image))
+            self.add_image_tab(str(stealth_image))
 
     def add_image_tab(self, image_path):
         # Add a new tab for displaying an image
+        if not Path(image_path).exists():
+            print(f"Image not found: {image_path}")
+            return
         image_viewer = ImageViewer(image_path)
-        tab_name = image_path.split('/')[-1]  # Use the file name as the tab title
+        tab_name = Path(image_path).name  # Use the file name as the tab title
         self.tab_widget.addTab(image_viewer, tab_name)
 
 if __name__ == "__main__":
