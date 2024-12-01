@@ -19,7 +19,7 @@ root_dir = Path(__file__).resolve().parent.parent
 ImageDraw.ImageDraw.font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf')
 
 class Screen: 
-    def __init__(self, name, tile_width, tile_height, tiles_w, tiles_h) -> None:
+    def __init__(self, name, tile_width, tile_height, tiles_w, tiles_h, **kwargs) -> None:
         self.name = name
         self.width = int(tile_width * tiles_w) 
         self.height = int(tile_height * tiles_h)
@@ -28,6 +28,7 @@ class Screen:
         self.tiles_w = tiles_w
         self.tiles_h = tiles_h
         self.colorBGHue = 0
+        self.num = kwargs.get('num', 0)
         empty_2d_array = [[None for _ in range(self.tiles_w)] for _ in range(self.tiles_h)]
 
 
@@ -45,16 +46,18 @@ class ScreenDrawer:
         self.colorBGHue = screen.colorBGHue
         self.colorA = blue
         self.colorB = red
+        self.num = screen.num
         self.im = Image.new("RGB", (self.width, self.height), 0)
         self.draw = ImageDraw.Draw(self.im)
         self.filename = self.sanitize_filename(self.name)
+        self.error = False
 
 
     def draw_eng(self):
         self.resetImg()
         self.draw_tiles()
         self.draw_screen_text()
-        self.im.save(self.path / '02_Eng_Blocks' / (self.name+".png"))
+        self.im.save(self.path / '02_Eng_Blocks' / ("{:03d}_{}.png".format(self.num, self.name)))
         pass
 
 
@@ -62,13 +65,13 @@ class ScreenDrawer:
         self.resetImg()
         self.drawBG(gray, red)
         self.draw_screen_text()
-        self.im.save(self.path / '01_Content_Blocks' / (self.name+".png"))
+        self.im.save(self.path / '01_Content_Blocks' / (("{:03d}_{}.png".format(self.num, self.name))))
         pass
 
     def draw_stealth(self):
         self.resetImg()
         self.drawBG((0,0,0), (76,185,227))
-        self.im.save(self.path / '03_Stealth_Blocks' / (self.name+".png"))
+        self.im.save(self.path / '03_Stealth_Blocks' / (("{:03d}_{}.png".format(self.num, self.name))))
         pass
 
     def draw_pretty(self):
@@ -88,7 +91,8 @@ class ScreenDrawer:
         cur_y = 0
 
         BG_A = self.hsv_to_rgb(self.colorBGHue, 100, 30)
-        BG_B = self.hsv_to_rgb(self.colorBGHue, 100, 15)
+        #BG_B = self.hsv_to_rgb(self.colorBGHue, 100, 15)
+        BG_B = gray2
 
         font_size = int(min(self.height,self.width)/6)
         font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf', font_size)
@@ -173,8 +177,12 @@ class ScreenList:
     def __init__(self, csv_path) -> None:
         # Initialize the screens list
         self.screens = []
-        self.rawScreens = self.parse_csv_with_header(csv_path)
-        self.setBGColors()
+        self.rawScreens = self.parse_csv_with_header(csv_path) 
+        if self.screens == []: 
+            print ("Parse Failed. Returning with Nothing")
+            return None
+        else:
+            self.setBGColors()
 
 
     def parse_csv_with_header(self, csv_path):
@@ -227,7 +235,8 @@ class ScreenList:
                                         int(row['Tile_Px_Width']),  # Tile_Px_Width as int
                                         int(row['Tile_Px_Height']),  # Tile_Px_Height as int
                                         int(row['Tiles_Wide']),  # Tiles_Wide as int
-                                        int(row['Tiles_High'])  # Tiles_High as int
+                                        int(row['Tiles_High']),  # Tiles_High as int
+                                        num = len(self.screens)
                                     )
                                 )
                             except ValueError as e:
@@ -235,6 +244,7 @@ class ScreenList:
 
             else:
                 print("Expected header not found in the file.")
+                self.error = True
                 return None
 
         except FileNotFoundError:
