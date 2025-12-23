@@ -29,7 +29,7 @@ class Screen:
         self.tiles_h = tiles_h
         self.colorBGHue = 0
         self.num = kwargs.get('num', 0)
-        empty_2d_array = [[None for _ in range(math.ceil(self.tiles_w))] for _ in range(math.ceil(self.tiles_h))]
+        self.enabled_array = kwargs.get('enabled_array', [[True for _ in range(math.ceil(self.tiles_w))] for _ in range(math.ceil(self.tiles_h))])
 
 
 class ScreenDrawer:
@@ -83,7 +83,46 @@ class ScreenDrawer:
         self.draw = ImageDraw.Draw(self.im)
 
     def drawBG(self, color, outline_color):
-        self.draw.rectangle((0,0,self.width-1,self.height-1), fill=color, outline=outline_color)
+        total_rows = math.ceil(self.tiles_h)
+        total_cols = math.ceil(self.tiles_w)
+
+        cur_x = 0
+        cur_y = 0
+
+        for i in range(total_rows):
+            remaining_h = self.tiles_h - i
+            tile_y_height = self.tile_height * (0.5 if 0 < remaining_h < 1 else 1)
+
+            for j in range(total_cols):
+                remaining_w = self.tiles_w - j
+                tile_x_width = self.tile_width * (0.5 if 0 < remaining_w < 1 else 1)
+
+                if self.screen.enabled_array[i][j]:
+                    # 1. Fill the background color for the enabled tile
+                    x1, y1 = cur_x, cur_y
+                    x2, y2 = cur_x + tile_x_width, cur_y + tile_y_height
+                    self.draw.rectangle((x1, y1, x2 - 1, y2 - 1), fill=color)
+
+                    # 2. Draw borders only on external edges
+                    # Check Top
+                    if i == 0 or not self.screen.enabled_array[i - 1][j]:
+                        self.draw.line((x1, y1, x2 - 1, y1), fill=outline_color, width=1)
+
+                    # Check Bottom
+                    if i == total_rows - 1 or not self.screen.enabled_array[i + 1][j]:
+                        self.draw.line((x1, y2 - 1, x2 - 1, y2 - 1), fill=outline_color, width=1)
+
+                    # Check Left
+                    if j == 0 or not self.screen.enabled_array[i][j - 1]:
+                        self.draw.line((x1, y1, x1, y2 - 1), fill=outline_color, width=1)
+
+                    # Check Right
+                    if j == total_cols - 1 or not self.screen.enabled_array[i][j + 1]:
+                        self.draw.line((x2 - 1, y1, x2 - 1, y2 - 1), fill=outline_color, width=1)
+
+                cur_x += tile_x_width
+            cur_x = 0
+            cur_y += tile_y_height
 
     def draw_tiles(self):
         cur_x = 0
@@ -105,9 +144,33 @@ class ScreenDrawer:
 
                 BG_color = BG_A if (j+i)%2 == 0 else BG_B
                 stoke = red if (j+i)%2 == 0 else blue
+                if self.screen.enabled_array[i][j]:
+                    self.draw.rectangle((cur_x, cur_y, cur_x+(tile_x_width-1), cur_y+(tile_y_height-1)), BG_color, stoke, 1)
+                    self.draw.text((cur_x+tile_x_width/2, cur_y+tile_y_height/2), f"{j+1},{i+1}", (255,255,255), anchor='mm')
+
+                cur_x += tile_x_width
+
+            cur_x = 0
+            cur_y += tile_y_height
+
+    def draw_simple_tiles(self, bgColor, strokeColor):
+        cur_x = 0
+        cur_y = 0
+
+        BG_A = bgColor
+
+        for i in range(math.ceil(self.tiles_h)):
+            remaining_h = self.tiles_h - i
+            tile_y_height = self.tile_height * (0.5 if 0 < remaining_h < 1 else 1)
+
+            for j in range(math.ceil(self.tiles_w)):
+                remaining_w = self.tiles_w - j
+                tile_x_width = self.tile_width * (0.5 if 0 < remaining_w < 1 else 1)
+
+                BG_color = BG_A
+                stoke = strokeColor
 
                 self.draw.rectangle((cur_x, cur_y, cur_x+(tile_x_width-1), cur_y+(tile_y_height-1)), BG_color, stoke, 1)
-                self.draw.text((cur_x+tile_x_width/2, cur_y+tile_y_height/2), f"{j+1},{i+1}", (255,255,255), anchor='mm')
 
                 cur_x += tile_x_width
 
@@ -167,7 +230,7 @@ class ScreenList:
 
     def parse_csv_with_header(self, csv_path):
         required_columns = [
-            "WALL", "Tile_Px_Width", "Tile_Px_Height", "Tiles_Wide", "Tiles_High"
+            "WALL", "Tile_Px_Width", "Tile_Px_Height", "Tiles_Wide", "Tiles_High" 
         ]
 
         try:
@@ -199,6 +262,21 @@ class ScreenList:
                 for row in dict_reader:
                     try:
                         if row["WALL"].strip():
+                            
+                            enabled_array = None
+                            if 'Enabled_Array' in row and row['Enabled_Array']:
+                                try:
+                                    # Deserialize the enabled_array string
+                                    enabled_array = [[bool(int(c)) for c in r] for r in row['Enabled_Array'].split(';')]
+                                except (ValueError, TypeError):
+                                    print(f"Warning: Could not parse Enabled_Array for {row['WALL']}. Defaulting to all enabled.")
+
+                            screen_kwargs = {
+                                'num': len(self.screens)
+                            }
+                            if enabled_array is not None:
+                                screen_kwargs['enabled_array'] = enabled_array
+
                             print(f"Adding screen with name: {row['WALL']}")
                             self.screens.append(
                                 Screen(
@@ -207,7 +285,7 @@ class ScreenList:
                                     float(row['Tile_Px_Height']),
                                     float(row['Tiles_Wide']),
                                     float(row['Tiles_High']),
-                                    num = len(self.screens)
+                                    **screen_kwargs
                                 )
                             )
                     except (ValueError, KeyError) as e:
@@ -219,6 +297,24 @@ class ScreenList:
         except Exception as e:
             print(f"An error occurred: {e}")
             return None
+
+    def save_to_csv(self, file_path):
+        header = ["WALL", "Tile_Px_Width", "Tile_Px_Height", "Tiles_Wide", "Tiles_High", "Enabled_Array"]
+        try:
+            with open(file_path, 'w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(header)
+                for screen in self.screens:
+                    # Serialize the enabled_array into a string format like "110;111;011"
+                    enabled_str = ';'.join([''.join([str(int(val)) for val in row]) for row in screen.enabled_array])
+                    
+                    row_data = [screen.name, screen.tile_width, screen.tile_height, screen.tiles_w, screen.tiles_h, enabled_str]
+                    writer.writerow(row_data)
+            print(f"Successfully saved screen data to {file_path}")
+            return True
+        except Exception as e:
+            print(f"Error saving CSV file: {e}")
+            return False
 
     def setBGColors(self):
         coloroffset = int(360 / len(self.screens))
