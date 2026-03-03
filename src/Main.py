@@ -3,12 +3,13 @@ from pathlib import Path
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QTabWidget, QVBoxLayout, 
     QPushButton, QLabel, QFileDialog, QHBoxLayout, QListWidget, QLineEdit,
-    QGridLayout, QGroupBox
+    QGridLayout, QGroupBox, QComboBox
 )
 from PySide6.QtGui import QPixmap, QPainter, QColor, QPen, QFont
 from PySide6.QtCore import Qt, QRectF, QPointF
 import math
 import screens
+from settings import Settings
 
 class ImageViewer(QWidget):
     def __init__(self, image_path, parent=None):
@@ -132,6 +133,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         main_layout = QHBoxLayout(central_widget) # Main layout is now horizontal
 
+        # Initialize Settings and paths
+        self.settings = Settings()
+        self.csv_file_path = Path("placeholder.csv") # Initialize with a Path to avoid type errors, but it won't be used until set
+        self.csv_file_path = None # Re-set to None, but now the type hint system should be happier or we can just use Optional
+        self.output_folder_path = None
+        self.ledScreen_list = None
+
         # Left sidebar for screen list
         self.ledScreen_list_widget = QListWidget()
         self.ledScreen_list_widget.setMaximumWidth(200) # Set a max width for the sidebar
@@ -189,29 +197,50 @@ class MainWindow(QMainWindow):
         self.prop_tiles_w = QLineEdit()
         self.prop_tiles_h = QLineEdit()
 
-        # Arrange properties in 3 columns
-        properties_layout.addWidget(QLabel("Name:"), 0, 0)
-        properties_layout.addWidget(self.prop_name, 0, 1, 1, 5) # Span name across remaining columns
+        # Tile Repository selection
+        self.tile_repo_combo = QComboBox()
+        self.tile_repo_combo.addItem("Select from Repository...")
+        all_tiles = self.settings.get_all_tiles()
+        for tile in all_tiles:
+            self.tile_repo_combo.addItem(f"{tile['brand']} - {tile['name']}", tile)
+        self.tile_repo_combo.currentIndexChanged.connect(self.on_tile_repo_selection_changed)
 
-        properties_layout.addWidget(QLabel("Panel Width(px):"), 1, 0)
-        properties_layout.addWidget(self.prop_tile_width, 1, 1)
-        properties_layout.addWidget(QLabel("Panel Height(px):"), 1, 2)
-        properties_layout.addWidget(self.prop_tile_height, 1, 3)
-        properties_layout.addWidget(QLabel("Tiles Wide:"), 2, 0)
-        properties_layout.addWidget(self.prop_tiles_w, 2, 1)
-        properties_layout.addWidget(QLabel("Tiles High:"), 2, 2)
-        properties_layout.addWidget(self.prop_tiles_h, 2, 3)
+        properties_layout.addWidget(QLabel("Tile Repository:"), 0, 0)
+        properties_layout.addWidget(self.tile_repo_combo, 0, 1, 1, 5)
+
+        # Arrange properties in 3 columns
+        properties_layout.addWidget(QLabel("Name:"), 1, 0)
+        properties_layout.addWidget(self.prop_name, 1, 1, 1, 5) # Span name across remaining columns
+
+        properties_layout.addWidget(QLabel("Panel Width(px):"), 2, 0)
+        properties_layout.addWidget(self.prop_tile_width, 2, 1)
+        properties_layout.addWidget(QLabel("Panel Height(px):"), 2, 2)
+        properties_layout.addWidget(self.prop_tile_height, 2, 3)
+        properties_layout.addWidget(QLabel("Tiles Wide:"), 3, 0)
+        properties_layout.addWidget(self.prop_tiles_w, 3, 1)
+        properties_layout.addWidget(QLabel("Tiles High:"), 3, 2)
+        properties_layout.addWidget(self.prop_tiles_h, 3, 3)
 
         self.connect_property_signals()
 
         right_side_layout.addWidget(properties_group_box)
 
-        # Initialize paths for validation
-        self.csv_file_path = Path
-        self.output_folder_path = Path
+        # Load previous values from settings
+        last_csv = self.settings.last_csv_path
+        if last_csv:
+            self.csv_file_path = Path(last_csv)
+            if self.csv_file_path.exists():
+                self.populate_screen_list()
+                self.save_csv_button.setEnabled(True)
+            else:
+                self.csv_file_path = None
 
-        # To hold screen data
-        self.ledScreen_list = None
+        last_output = self.settings.default_output_folder
+        if last_output:
+            self.output_folder_path = Path(last_output)
+            self.check_run_button_enabled()
+        else:
+            self.output_folder_path = None
 
     def connect_property_signals(self):
         self.prop_name.editingFinished.connect(self.update_screen_from_properties)
@@ -220,11 +249,29 @@ class MainWindow(QMainWindow):
         self.prop_tiles_w.editingFinished.connect(self.update_screen_from_properties)
         self.prop_tiles_h.editingFinished.connect(self.update_screen_from_properties)
 
+    def on_tile_repo_selection_changed(self, index):
+        if index <= 0:
+            return
+            
+        tile_data = self.tile_repo_combo.itemData(index)
+        if tile_data:
+            self.prop_tile_width.setText(str(tile_data['pixel_width']))
+            self.prop_tile_height.setText(str(tile_data['pixel_height']))
+            # Trigger update
+            self.update_screen_from_properties()
+
     def select_csv_file(self):
         # Open a file dialog to select a CSV file
-        csv_file, _ = QFileDialog.getOpenFileName(self, "Select CSV File", "", "CSV Files (*.csv)")
+        start_dir = ""
+        if self.csv_file_path and self.csv_file_path.exists():
+            start_dir = str(self.csv_file_path.parent)
+        elif self.settings.default_output_folder: # Fallback to a default if CSV never selected
+            start_dir = str(Path(self.settings.default_output_folder).parent)
+            
+        csv_file, _ = QFileDialog.getOpenFileName(self, "Select CSV File", start_dir, "CSV Files (*.csv)")
         if csv_file:
             self.csv_file_path = Path(csv_file)  # Store as Path object
+            self.settings.last_csv_path = str(self.csv_file_path) # Save to settings
             print(f"Selected CSV file: {self.csv_file_path}")
             self.populate_screen_list()
             self.check_run_button_enabled()
@@ -285,8 +332,32 @@ class MainWindow(QMainWindow):
             # Update numeric properties with validation
             screen_to_update.tile_width = float(self.prop_tile_width.text())
             screen_to_update.tile_height = float(self.prop_tile_height.text())
-            screen_to_update.tiles_w = float(self.prop_tiles_w.text())
-            screen_to_update.tiles_h = float(self.prop_tiles_h.text())
+            
+            new_tiles_w = float(self.prop_tiles_w.text())
+            new_tiles_h = float(self.prop_tiles_h.text())
+
+            # Resize enabled_array to match new dimensions
+            new_rows = math.ceil(new_tiles_h)
+            new_cols = math.ceil(new_tiles_w)
+            current_rows = len(screen_to_update.enabled_array)
+            current_cols = len(screen_to_update.enabled_array[0]) if current_rows > 0 else 0
+
+            if new_rows != current_rows:
+                if new_rows > current_rows:
+                    for _ in range(new_rows - current_rows):
+                        screen_to_update.enabled_array.append([True] * current_cols)
+                else:
+                    screen_to_update.enabled_array = screen_to_update.enabled_array[:new_rows]
+            
+            if new_cols != current_cols:
+                for i in range(len(screen_to_update.enabled_array)):
+                    if new_cols > current_cols:
+                        screen_to_update.enabled_array[i].extend([True] * (new_cols - current_cols))
+                    else:
+                        screen_to_update.enabled_array[i] = screen_to_update.enabled_array[i][:new_cols]
+
+            screen_to_update.tiles_w = new_tiles_w
+            screen_to_update.tiles_h = new_tiles_h
 
             # Recalculate total width/height
             screen_to_update.width = int(screen_to_update.tile_width * screen_to_update.tiles_w)
@@ -300,8 +371,8 @@ class MainWindow(QMainWindow):
             self.on_screen_selection_changed() # Revert to original values on error
 
     def save_csv_file(self):
-        if not self.ledScreen_list:
-            print("No screen data to save.")
+        if not self.ledScreen_list or not self.csv_file_path:
+            print("No screen data or CSV path to save.")
             return
 
         # Suggest a filename based on the original, adding '_modified'
@@ -313,9 +384,14 @@ class MainWindow(QMainWindow):
 
     def select_output_folder(self):
         # Open a dialog to select an output folder
-        folder = QFileDialog.getExistingDirectory(self, "Select Output Folder")
+        start_dir = ""
+        if self.output_folder_path and self.output_folder_path.exists():
+            start_dir = str(self.output_folder_path)
+            
+        folder = QFileDialog.getExistingDirectory(self, "Select Output Folder", start_dir)
         if folder:
             self.output_folder_path = Path(folder)  # Store as Path object
+            self.settings.default_output_folder = str(self.output_folder_path) # Save to settings
             print(f"Selected output folder: {self.output_folder_path}")
             self.check_run_button_enabled()
 
@@ -331,14 +407,18 @@ class MainWindow(QMainWindow):
         print("Running the main loop to create images...")
         
         # Ensure output folder exists
-        if not self.output_folder_path.exists():
-            print(f"Output folder does not exist: {self.output_folder_path}")
+        if not self.output_folder_path or not self.output_folder_path.exists():
+            print(f"Output folder does not exist or not selected: {self.output_folder_path}")
             return
         
         # Prepare output directories
         csv_path = self.csv_file_path
-        filename = csv_path.stem  # Get the CSV filename without extension
-        base_output_path = self.output_folder_path / filename
+        if not csv_path:
+            print("No CSV file selected.")
+            return
+
+        output_dir = Path(self.output_folder_path) if self.output_folder_path else Path(self.settings.default_output_folder)
+        base_output_path = output_dir
 
         # Create necessary directories
         (base_output_path / '01_Content_Blocks').mkdir(parents=True, exist_ok=True)

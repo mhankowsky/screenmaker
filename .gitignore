@@ -1,2 +1,5 @@
 .venv
 /testing/*
+/build
+/dist
+/src/__pycache__

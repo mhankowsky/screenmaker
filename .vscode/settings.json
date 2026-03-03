@@ -1,4 +1,10 @@
 {
     "python.analysis.typeCheckingMode": "basic",
-    "cursorpyright.analysis.typeCheckingMode": "basic"
+    "cursorpyright.analysis.typeCheckingMode": "basic",
+    "Lua.workspace.library": [
+        "c:\\Users\\mhank\\.vscode\\extensions\\carrot-industries.ma3-lua-api-1.4.3\\resources\\2.3"
+    ],
+    "Lua.diagnostics.disable": [
+        "undefined-field"
+    ]
 }

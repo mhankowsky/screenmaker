@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 #Root Dir 
 
-root_dir = Path(__file__).resolve().parent.parent
+if getattr(sys, 'frozen', False):
+    root_dir = Path(sys._MEIPASS)
+else:
+    root_dir = Path(__file__).resolve().parent.parent
 
 #Set default font 
 ImageDraw.ImageDraw.font = ImageFont.truetype(root_dir / 'lib'/ 'font' /'RobotoMono-Light.ttf')
@@ -47,7 +50,7 @@ class ScreenDrawer:
         self.colorA = blue
         self.colorB = red
         self.num = screen.num
-        self.im = Image.new("RGB", (self.width, self.height), 0)
+        self.im = Image.new("RGBA", (self.width, self.height), (0, 0, 0, 0))
         self.draw = ImageDraw.Draw(self.im)
         self.filename = self.sanitize_filename(self.name)
         self.error = False
@@ -79,7 +82,7 @@ class ScreenDrawer:
         pass
 
     def resetImg(self):
-        self.im = Image.new("RGB", (self.width, self.height), 0)
+        self.im = Image.new("RGBA", (self.width, self.height), (0, 0, 0, 0))
         self.draw = ImageDraw.Draw(self.im)
 
     def drawBG(self, color, outline_color):
