@@ -1,0 +1,607 @@
+/* ── ScreenMaker / F9 Design System ─────────────────────────────────────── */
+
+/* Design tokens */
+:root {
+  --bg-0:        #0A0A0A;   /* page background */
+  --bg-1:        #101010;   /* sidebar, panels */
+  --bg-2:        #171717;   /* inputs, modals */
+  --bg-3:        #202020;   /* hover states */
+  --border:      rgba(255, 255, 255, 0.07);
+  --border-mid:  rgba(255, 255, 255, 0.12);
+
+  --text-1:      #F2F2F2;   /* primary text */
+  --text-2:      #888888;   /* secondary / labels */
+  --text-3:      #505050;   /* muted / disabled */
+
+  --accent:      #1B6CF2;   /* F9 blue */
+  --accent-h:    #1558CC;   /* blue hover */
+  --accent-dim:  rgba(27, 108, 242, 0.14);
+
+  --success:     #2A9D4E;
+  --success-h:   #23813F;
+  --warn:        #C57D1A;
+  --warn-h:      #A86814;
+  --danger:      #C0392B;
+
+  --radius:      4px;
+  --nav-h:       52px;
+}
+
+/* ── Reset / Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Navigation ────────────────────────────────────────────────────────── */
+.sm-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-h);
+  padding: 0 20px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.sm-nav-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  user-select: none;
+}
+
+.sm-nav-f9 {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.sm-nav-divider {
+  color: var(--text-3);
+  font-weight: 300;
+}
+
+.sm-nav-product {
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--text-2);
+}
+
+.sm-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.sm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.sm-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sm-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.sm-btn-primary:hover:not(:disabled) {
+  background: var(--accent-h);
+  border-color: var(--accent-h);
+  color: #fff;
+}
+
+.sm-btn-ghost {
+  background: transparent;
+  border-color: var(--border-mid);
+  color: var(--text-2);
+}
+.sm-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-3);
+  border-color: var(--border-mid);
+  color: var(--text-1);
+}
+
+.sm-btn-warn {
+  background: transparent;
+  border-color: var(--border-mid);
+  color: var(--warn);
+}
+.sm-btn-warn:hover:not(:disabled) {
+  background: rgba(197, 125, 26, 0.1);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.sm-btn-icon {
+  background: transparent;
+  border-color: var(--border-mid);
+  color: var(--text-2);
+  padding: 5px 10px;
+  font-size: 16px;
+  line-height: 1;
+}
+.sm-btn-icon:hover {
+  background: var(--bg-3);
+  color: var(--text-1);
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.sm-layout {
+  display: flex;
+  height: calc(100vh - var(--nav-h));
+  overflow: hidden;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+.sm-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg-1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sm-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sm-btn-add {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-mid);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+.sm-btn-add:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sm-screen-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.sm-screen-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.1s;
+  user-select: none;
+}
+.sm-screen-item:hover {
+  background: var(--bg-3);
+}
+.sm-screen-item.active {
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+}
+
+.sm-screen-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sm-screen-name {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sm-screen-item.active .sm-screen-name {
+  color: var(--text-1);
+}
+
+/* ── Labels ─────────────────────────────────────────────────────────────── */
+.sm-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
+
+.sm-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--bg-3);
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+}
+
+.sm-unit {
+  font-size: 9px;
+  color: var(--text-3);
+  text-transform: lowercase;
+  letter-spacing: 0;
+}
+
+/* ── Canvas area ────────────────────────────────────────────────────────── */
+.sm-main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sm-canvas-area {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 24px;
+  background: var(--bg-0);
+}
+
+#previewCanvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.sm-empty-state {
+  text-align: center;
+  user-select: none;
+}
+
+.sm-empty-icon {
+  font-size: 2.5rem;
+  color: var(--text-3);
+  line-height: 1;
+}
+
+.sm-empty-title {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.sm-empty-sub {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ── Properties panel ───────────────────────────────────────────────────── */
+.sm-props {
+  border-top: 1px solid var(--border);
+  background: var(--bg-1);
+  flex-shrink: 0;
+  padding: 12px 20px;
+}
+
+.sm-props-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.sm-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 80px;
+}
+
+.sm-field-wide {
+  min-width: 160px;
+  flex: 1 1 160px;
+  max-width: 240px;
+}
+
+.sm-field-action {
+  min-width: 100px;
+}
+
+/* ── Inputs ─────────────────────────────────────────────────────────────── */
+.sm-input {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  width: 100%;
+  transition: border-color 0.12s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.sm-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.sm-input::placeholder {
+  color: var(--text-3);
+}
+
+.sm-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.sm-input-static {
+  color: var(--text-3);
+  cursor: default;
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+/* ── Dropdown menu ──────────────────────────────────────────────────────── */
+.sm-dropdown {
+  background: var(--bg-2) !important;
+  border: 1px solid var(--border-mid) !important;
+  border-radius: var(--radius) !important;
+  padding: 4px 0 !important;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+
+.sm-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 7px 14px;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.1s, color 0.1s;
+}
+.sm-dropdown-item:hover {
+  background: var(--bg-3);
+  color: var(--text-1);
+}
+.sm-dropdown-item.danger {
+  color: #e05550;
+}
+.sm-dropdown-item.danger:hover {
+  background: rgba(192, 57, 43, 0.12);
+  color: #e05550;
+}
+
+.sm-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ── Modals ─────────────────────────────────────────────────────────────── */
+.sm-modal {
+  background: var(--bg-2) !important;
+  border: 1px solid var(--border-mid) !important;
+  border-radius: 6px !important;
+  color: var(--text-1);
+}
+
+.sm-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sm-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.sm-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  transition: color 0.1s, background 0.1s;
+}
+.sm-modal-close:hover {
+  color: var(--text-1);
+  background: var(--bg-3);
+}
+
+.sm-modal-body {
+  padding: 20px 22px;
+}
+
+.sm-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* Form grid inside modal */
+.sm-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.sm-field-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Progress ────────────────────────────────────────────────────────────── */
+.sm-generate-status {
+  font-size: 12px;
+  color: var(--text-2);
+  margin: 0 0 10px;
+}
+
+.sm-progress-track {
+  height: 4px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sm-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.sm-progress-bar.animated {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--accent),
+    var(--accent) 6px,
+    var(--accent-h) 6px,
+    var(--accent-h) 12px
+  );
+  background-size: 200% 100%;
+  animation: sm-stripe 1s linear infinite;
+}
+
+@keyframes sm-stripe {
+  0%   { background-position: 0 0; }
+  100% { background-position: 24px 0; }
+}
+
+/* ── Alerts ──────────────────────────────────────────────────────────────── */
+.sm-alert {
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.sm-alert-danger {
+  background: rgba(192, 57, 43, 0.12);
+  border: 1px solid rgba(192, 57, 43, 0.3);
+  color: #e07070;
+}
+
+/* ── Login page ─────────────────────────────────────────────────────────── */
+.sm-login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-0);
+}
+
+.sm-login-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 40px 36px;
+  background: var(--bg-1);
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+}
+
+.sm-login-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.sm-login-f9 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.sm-login-slash {
+  color: var(--text-3);
+  font-weight: 300;
+  margin: 0 6px;
+}
+
+.sm-login-product {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: 0.12em;
+}
+
+.sm-login-sub {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }

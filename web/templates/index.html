@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScreenMaker / F9</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ── Navbar ───────────────────────────────────────────────────────────── -->
+  <nav class="sm-nav">
+    <div class="sm-nav-brand">
+      <span class="sm-nav-f9">F9</span>
+      <span class="sm-nav-divider">/</span>
+      <span class="sm-nav-product">SCREENMAKER</span>
+    </div>
+
+    <div class="sm-nav-actions">
+      <label class="sm-btn sm-btn-ghost" title="Load a screen layout CSV">
+        Upload CSV
+        <input type="file" id="csvUpload" accept=".csv" hidden>
+      </label>
+
+      <button id="btnExportCSV" class="sm-btn sm-btn-ghost" disabled title="Download screen list as CSV">
+        Export CSV
+      </button>
+
+      <button id="btnGenerate" class="sm-btn sm-btn-primary" disabled title="Generate PNG rasters">
+        &#9654;&ensp;Generate All
+      </button>
+
+      <div class="dropdown">
+        <button
+          class="sm-btn sm-btn-icon"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          aria-label="More options"
+        >&#8942;</button>
+        <ul class="dropdown-menu dropdown-menu-end sm-dropdown">
+          <li>
+            <button class="sm-dropdown-item danger" id="btnClearAll">
+              Clear All Screens
+            </button>
+          </li>
+          <li><div class="sm-dropdown-divider"></div></li>
+          <li><a class="sm-dropdown-item" href="/logout">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Main layout ─────────────────────────────────────────────────────── -->
+  <div class="sm-layout">
+
+    <!-- Left sidebar -->
+    <aside class="sm-sidebar">
+      <div class="sm-sidebar-header">
+        <span class="sm-label">Screens</span>
+        <span id="screenCount" class="sm-badge">0</span>
+        <button id="btnAddScreen" class="sm-btn-add" title="Add a new screen">&#43;</button>
+      </div>
+      <ul id="screenList" class="sm-screen-list"></ul>
+    </aside>
+
+    <!-- Right: canvas + properties -->
+    <div class="sm-main">
+
+      <!-- Canvas -->
+      <div id="canvasWrapper" class="sm-canvas-area">
+        <div id="emptyState" class="sm-empty-state">
+          <div class="sm-empty-icon">&#9634;</div>
+          <p class="sm-empty-title">No screens loaded</p>
+          <p class="sm-empty-sub">Upload a CSV or use &#43; to add a screen.</p>
+        </div>
+        <canvas id="previewCanvas" style="display:none; cursor:crosshair;"></canvas>
+      </div>
+
+      <!-- Properties panel -->
+      <div id="propertiesPanel" class="sm-props" style="display:none;">
+        <div class="sm-props-grid">
+
+          <div class="sm-field sm-field-wide">
+            <label class="sm-label" for="propName">Screen Name</label>
+            <input type="text" id="propName" class="sm-input">
+          </div>
+
+          <div class="sm-field sm-field-wide">
+            <label class="sm-label" for="propTileRepo">Tile Repository</label>
+            <select id="propTileRepo" class="sm-input sm-select">
+              <option value="">— Select LED Tile —</option>
+            </select>
+          </div>
+
+          <div class="sm-field">
+            <label class="sm-label" for="propTileW">Tile W <span class="sm-unit">px</span></label>
+            <input type="number" id="propTileW" class="sm-input" min="1" step="1">
+          </div>
+
+          <div class="sm-field">
+            <label class="sm-label" for="propTileH">Tile H <span class="sm-unit">px</span></label>
+            <input type="number" id="propTileH" class="sm-input" min="1" step="1">
+          </div>
+
+          <div class="sm-field">
+            <label class="sm-label" for="propTilesW">Tiles Wide</label>
+            <input type="number" id="propTilesW" class="sm-input" min="0.5" step="0.5">
+          </div>
+
+          <div class="sm-field">
+            <label class="sm-label" for="propTilesH">Tiles High</label>
+            <input type="number" id="propTilesH" class="sm-input" min="0.5" step="0.5">
+          </div>
+
+          <div class="sm-field">
+            <label class="sm-label">Resolution</label>
+            <div id="propResolution" class="sm-input sm-input-static">—</div>
+          </div>
+
+          <div class="sm-field sm-field-action">
+            <label class="sm-label">&nbsp;</label>
+            <button id="btnResetTiles" class="sm-btn sm-btn-warn">Reset Tiles</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Add Screen modal ───────────────────────────────────────────────── -->
+  <div class="modal fade" id="addScreenModal" tabindex="-1" aria-labelledby="addScreenModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content sm-modal">
+
+        <div class="sm-modal-header">
+          <h5 class="sm-modal-title" id="addScreenModalLabel">New Screen</h5>
+          <button type="button" class="sm-modal-close" data-bs-dismiss="modal" aria-label="Close">&#x2715;</button>
+        </div>
+
+        <div class="sm-modal-body">
+          <div id="addScreenError" class="sm-alert sm-alert-danger d-none"></div>
+
+          <div class="sm-form-grid">
+            <div class="sm-field sm-field-full">
+              <label class="sm-label" for="newScreenName">Screen Name</label>
+              <input type="text" id="newScreenName" class="sm-input" placeholder="e.g. Cube A SR">
+            </div>
+
+            <div class="sm-field sm-field-full">
+              <label class="sm-label" for="newScreenTileRepo">Tile Repository</label>
+              <select id="newScreenTileRepo" class="sm-input sm-select">
+                <option value="">— Select LED Tile (optional) —</option>
+              </select>
+            </div>
+
+            <div class="sm-field">
+              <label class="sm-label" for="newScreenTileW">Tile W <span class="sm-unit">px</span></label>
+              <input type="number" id="newScreenTileW" class="sm-input" value="60" min="1" step="1">
+            </div>
+
+            <div class="sm-field">
+              <label class="sm-label" for="newScreenTileH">Tile H <span class="sm-unit">px</span></label>
+              <input type="number" id="newScreenTileH" class="sm-input" value="60" min="1" step="1">
+            </div>
+
+            <div class="sm-field">
+              <label class="sm-label" for="newScreenTilesW">Tiles Wide</label>
+              <input type="number" id="newScreenTilesW" class="sm-input" value="8" min="0.5" step="0.5">
+            </div>
+
+            <div class="sm-field">
+              <label class="sm-label" for="newScreenTilesH">Tiles High</label>
+              <input type="number" id="newScreenTilesH" class="sm-input" value="6" min="0.5" step="0.5">
+            </div>
+          </div>
+        </div>
+
+        <div class="sm-modal-footer">
+          <button type="button" class="sm-btn sm-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="sm-btn sm-btn-primary" id="btnAddScreenConfirm">Add Screen</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Generation progress modal ─────────────────────────────────────── -->
+  <div class="modal fade" id="generateModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content sm-modal">
+
+        <div class="sm-modal-header">
+          <h5 class="sm-modal-title">Generating PNGs&hellip;</h5>
+        </div>
+
+        <div class="sm-modal-body">
+          <p id="generateStatus" class="sm-generate-status">Preparing&hellip;</p>
+          <div class="sm-progress-track">
+            <div id="generateProgressBar" class="sm-progress-bar"></div>
+          </div>
+          <div id="generateError" class="sm-alert sm-alert-danger d-none"></div>
+        </div>
+
+        <div class="sm-modal-footer">
+          <button id="btnDownloadZip" class="sm-btn sm-btn-primary d-none">&#8595;&ensp;Download ZIP</button>
+          <button id="btnCloseModal" class="sm-btn sm-btn-ghost d-none" data-bs-dismiss="modal">Close</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/preview.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

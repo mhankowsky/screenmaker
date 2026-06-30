@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScreenMaker / F9</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+  <div class="sm-login-wrap">
+    <div class="sm-login-card">
+
+      <div class="sm-login-brand">
+        <div>
+          <span class="sm-login-f9">F9</span>
+          <span class="sm-login-slash">/</span>
+          <span class="sm-login-product">SCREENMAKER</span>
+        </div>
+        <span class="sm-login-sub">LED Screen Raster Generator</span>
+      </div>
+
+      {% if error %}
+      <div class="sm-alert sm-alert-danger" style="margin-bottom:16px; margin-top:0;">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" autocomplete="off">
+        <div style="margin-bottom:16px;">
+          <label class="sm-label" for="password">Password</label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            class="sm-input"
+            autofocus
+            placeholder="Enter password"
+          >
+        </div>
+        <button type="submit" class="sm-btn sm-btn-primary" style="width:100%; justify-content:center;">
+          Sign In
+        </button>
+      </form>
+
+    </div>
+  </div>
+</body>
+</html>
