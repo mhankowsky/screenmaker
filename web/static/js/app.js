@@ -50,6 +50,7 @@ const apiPatch = (url, body) => apiFetch(url, {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 });
+const apiDelete = (url) => apiFetch(url, { method: 'DELETE' });
 
 function escHtml(str) {
   return String(str)
@@ -141,6 +142,14 @@ function renderScreenList() {
       <li class="sm-screen-item${active}" data-id="${s.id}" onclick="selectScreen(${s.id})">
         <span class="sm-screen-swatch" style="background:${color};"></span>
         <span class="sm-screen-name" title="${escHtml(s.name)}">${escHtml(s.name)}</span>
+        <div class="dropdown sm-screen-menu" onclick="event.stopPropagation()">
+          <button class="sm-btn sm-btn-icon sm-screen-menu-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Screen options">&#8942;</button>
+          <ul class="dropdown-menu dropdown-menu-end sm-dropdown">
+            <li><button class="sm-dropdown-item" onclick="handleDuplicateScreen(${s.id})">Duplicate</button></li>
+            <li><div class="sm-dropdown-divider"></div></li>
+            <li><button class="sm-dropdown-item danger" onclick="handleDeleteScreen(${s.id})">Delete</button></li>
+          </ul>
+        </div>
       </li>`;
   }).join('');
 }
@@ -272,6 +281,47 @@ function handleNewScreenTileRepoSelect() {
   if (!opt || !opt.dataset.pixelWidth) return;
   document.getElementById('newScreenTileW').value = opt.dataset.pixelWidth;
   document.getElementById('newScreenTileH').value = opt.dataset.pixelHeight;
+}
+
+// ── Delete / Duplicate screen ──────────────────────────────────────────────────
+
+async function handleDeleteScreen(id) {
+  const screen = state.screens.find(s => s.id === id);
+  if (!screen) return;
+  if (!confirm(`Delete screen "${screen.name}"? This cannot be undone.`)) return;
+
+  try {
+    const result = await apiDelete(`/api/screens/${id}`);
+    state.screens = result.screens;
+    setButtonStates();
+
+    if (state.activeScreenId === id) {
+      state.activeScreenId = null;
+      if (state.screens.length > 0) {
+        selectScreen(state.screens[0].id);
+      } else {
+        renderScreenList();
+        document.getElementById('previewCanvas').style.display = 'none';
+        document.getElementById('propertiesPanel').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+      }
+    } else {
+      renderScreenList();
+    }
+  } catch (e) {
+    alert('Failed to delete screen: ' + e.message);
+  }
+}
+
+async function handleDuplicateScreen(id) {
+  try {
+    const result = await apiPost(`/api/screens/${id}/duplicate`);
+    state.screens = result.screens;
+    setButtonStates();
+    selectScreen(result.new_id);
+  } catch (e) {
+    alert('Failed to duplicate screen: ' + e.message);
+  }
 }
 
 // ── Properties panel ───────────────────────────────────────────────────────────

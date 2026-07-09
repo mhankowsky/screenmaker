@@ -4,6 +4,7 @@ import sys
 import os
 import uuid
 import csv
+import copy
 import math
 import zipfile
 import tempfile
@@ -293,6 +294,39 @@ def update_tiles(screen_id):
     screen_dict['enabled_array'] = data['enabled_array']
     _save_session_screens(screens)
     return jsonify({'ok': True})
+
+
+@app.route('/api/screens/<int:screen_id>', methods=['DELETE'])
+@login_required
+def delete_screen(screen_id):
+    screens = _get_session_screens()
+    screen_dict = next((s for s in screens if s['id'] == screen_id), None)
+    if screen_dict is None:
+        return jsonify({'error': 'Screen not found'}), 404
+
+    screens.remove(screen_dict)
+    _recalculate_hues(screens)
+    _save_session_screens(screens)
+    return jsonify({'screens': screens})
+
+
+@app.route('/api/screens/<int:screen_id>/duplicate', methods=['POST'])
+@login_required
+def duplicate_screen(screen_id):
+    screens = _get_session_screens()
+    screen_dict = next((s for s in screens if s['id'] == screen_id), None)
+    if screen_dict is None:
+        return jsonify({'error': 'Screen not found'}), 404
+
+    new_id = max((s['id'] for s in screens), default=-1) + 1
+    new_screen = copy.deepcopy(screen_dict)
+    new_screen['id'] = new_id
+    new_screen['name'] = f"{screen_dict['name']} copy"
+
+    screens.append(new_screen)
+    _recalculate_hues(screens)
+    _save_session_screens(screens)
+    return jsonify({'screens': screens, 'new_id': new_id}), 201
 
 
 @app.route('/api/clear', methods=['POST'])
