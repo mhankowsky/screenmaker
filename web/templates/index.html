@@ -89,11 +89,10 @@
             <input type="text" id="propName" class="sm-input">
           </div>
 
-          <div class="sm-field sm-field-wide">
+          <div class="sm-field sm-field-wide sm-combobox">
             <label class="sm-label" for="propTileRepo">Tile Repository</label>
-            <select id="propTileRepo" class="sm-input sm-select">
-              <option value="">— Select LED Tile —</option>
-            </select>
+            <input type="text" id="propTileRepo" class="sm-input" placeholder="Search LED tiles…" autocomplete="off">
+            <div id="propTileRepoMenu" class="sm-combobox-menu"></div>
           </div>
 
           <div class="sm-field">
@@ -151,11 +150,10 @@
               <input type="text" id="newScreenName" class="sm-input" placeholder="e.g. Cube A SR">
             </div>
 
-            <div class="sm-field sm-field-full">
+            <div class="sm-field sm-field-full sm-combobox">
               <label class="sm-label" for="newScreenTileRepo">Tile Repository</label>
-              <select id="newScreenTileRepo" class="sm-input sm-select">
-                <option value="">— Select LED Tile (optional) —</option>
-              </select>
+              <input type="text" id="newScreenTileRepo" class="sm-input" placeholder="Search LED tiles (optional)…" autocomplete="off">
+              <div id="newScreenTileRepoMenu" class="sm-combobox-menu"></div>
             </div>
 
             <div class="sm-field">

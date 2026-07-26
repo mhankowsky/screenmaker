@@ -82,15 +82,23 @@ async function init() {
   // Add Screen
   document.getElementById('btnAddScreen').addEventListener('click', openAddScreenModal);
   document.getElementById('btnAddScreenConfirm').addEventListener('click', handleAddScreen);
-  document.getElementById('newScreenTileRepo').addEventListener('change', handleNewScreenTileRepoSelect);
+
+  setupTileCombobox('newScreenTileRepo', 'newScreenTileRepoMenu', tile => {
+    document.getElementById('newScreenTileW').value = tile.pixel_width;
+    document.getElementById('newScreenTileH').value = tile.pixel_height;
+  });
 
   // Enter key submits add-screen modal
   document.getElementById('addScreenModal').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleAddScreen();
+    if (e.key === 'Enter' && document.activeElement.id !== 'newScreenTileRepo') handleAddScreen();
   });
 
   // Properties panel
-  document.getElementById('propTileRepo').addEventListener('change', handleTileRepoSelect);
+  setupTileCombobox('propTileRepo', 'propTileRepoMenu', tile => {
+    document.getElementById('propTileW').value = tile.pixel_width;
+    document.getElementById('propTileH').value = tile.pixel_height;
+    handlePropertiesChange();
+  });
   document.getElementById('btnResetTiles').addEventListener('click', handleResetTiles);
 
   const debouncedProps = debounce(handlePropertiesChange, 400);
@@ -117,8 +125,6 @@ async function loadScreens() {
 async function loadTiles() {
   try {
     state.tiles = await apiGet('/api/tiles');
-    renderTileRepo('propTileRepo');
-    renderTileRepo('newScreenTileRepo');
   } catch (e) {
     console.error('Failed to load tile repository:', e);
   }
@@ -154,16 +160,97 @@ function renderScreenList() {
   }).join('');
 }
 
-function renderTileRepo(selectId) {
-  const sel = document.getElementById(selectId);
-  const first = sel.options[0].text; // keep placeholder
-  sel.innerHTML = `<option value="">${first}</option>`;
-  state.tiles.forEach(t => {
-    const opt = new Option(t.name, t.id);
-    opt.dataset.pixelWidth  = t.pixel_width;
-    opt.dataset.pixelHeight = t.pixel_height;
-    sel.appendChild(opt);
+// ── Tile combobox (searchable, grouped by manufacturer) ────────────────────────
+
+function setupTileCombobox(inputId, menuId, onSelect) {
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(menuId);
+  let activeIndex = -1;
+
+  function itemEls() {
+    return Array.from(menu.querySelectorAll('.sm-combobox-item'));
+  }
+
+  function setActive(idx) {
+    const items = itemEls();
+    items.forEach(el => el.classList.remove('active'));
+    if (idx < 0 || idx >= items.length) { activeIndex = -1; return; }
+    activeIndex = idx;
+    items[idx].classList.add('active');
+    items[idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  function selectTile(tile) {
+    input.value = tile.name;
+    menu.classList.remove('show');
+    onSelect(tile);
+  }
+
+  function renderMenu(query) {
+    const q = query.trim().toLowerCase();
+    const filtered = state.tiles.filter(t =>
+      !q || t.name.toLowerCase().includes(q) || (t.brand || '').toLowerCase().includes(q)
+    );
+
+    if (filtered.length === 0) {
+      menu.innerHTML = '<div class="sm-combobox-empty">No matching tiles</div>';
+      menu.classList.add('show');
+      activeIndex = -1;
+      return;
+    }
+
+    const groups = {};
+    filtered.forEach(t => {
+      const brand = t.brand || 'Other';
+      (groups[brand] = groups[brand] || []).push(t);
+    });
+
+    menu.innerHTML = Object.keys(groups).sort().map(brand => `
+      <div class="sm-combobox-group">${escHtml(brand)}</div>
+      ${groups[brand].map(t => `
+        <button type="button" class="sm-combobox-item" data-id="${t.id}">
+          <span>${escHtml(t.name)}</span>
+          <span class="sm-combobox-meta">${t.pixel_width}&times;${t.pixel_height}px${t.pitch ? ` &middot; ${t.pitch}mm` : ''}</span>
+        </button>
+      `).join('')}
+    `).join('');
+
+    menu.classList.add('show');
+    activeIndex = -1;
+
+    itemEls().forEach(btn => {
+      btn.addEventListener('mousedown', e => {
+        e.preventDefault(); // keep input focused so 'blur' doesn't close menu before click
+        const tile = state.tiles.find(t => t.id === Number(btn.dataset.id));
+        if (tile) selectTile(tile);
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => renderMenu(''));
+  input.addEventListener('input', () => renderMenu(input.value));
+
+  input.addEventListener('keydown', e => {
+    const items = itemEls();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!menu.classList.contains('show')) renderMenu(input.value);
+      setActive(Math.min(activeIndex + 1, items.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive(Math.max(activeIndex - 1, 0));
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && items[activeIndex]) {
+        e.preventDefault();
+        const tile = state.tiles.find(t => t.id === Number(items[activeIndex].dataset.id));
+        if (tile) selectTile(tile);
+      }
+    } else if (e.key === 'Escape') {
+      menu.classList.remove('show');
+    }
   });
+
+  input.addEventListener('blur', () => menu.classList.remove('show'));
 }
 
 function setButtonStates() {
@@ -275,14 +362,6 @@ async function handleAddScreen() {
   }
 }
 
-function handleNewScreenTileRepoSelect() {
-  const sel = document.getElementById('newScreenTileRepo');
-  const opt = sel.options[sel.selectedIndex];
-  if (!opt || !opt.dataset.pixelWidth) return;
-  document.getElementById('newScreenTileW').value = opt.dataset.pixelWidth;
-  document.getElementById('newScreenTileH').value = opt.dataset.pixelHeight;
-}
-
 // ── Delete / Duplicate screen ──────────────────────────────────────────────────
 
 async function handleDeleteScreen(id) {
@@ -351,15 +430,6 @@ async function handlePropertiesChange() {
   } catch (e) {
     console.error('Properties update failed:', e);
   }
-}
-
-function handleTileRepoSelect() {
-  const sel = document.getElementById('propTileRepo');
-  const opt = sel.options[sel.selectedIndex];
-  if (!opt || !opt.dataset.pixelWidth) return;
-  document.getElementById('propTileW').value = opt.dataset.pixelWidth;
-  document.getElementById('propTileH').value = opt.dataset.pixelHeight;
-  handlePropertiesChange();
 }
 
 async function handleResetTiles() {

@@ -461,6 +461,76 @@ body {
   margin: 4px 0;
 }
 
+/* ── Tile combobox ──────────────────────────────────────────────────────── */
+.sm-combobox {
+  position: relative;
+}
+
+.sm-combobox-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 1060;
+  padding: 4px 0;
+}
+.sm-combobox-menu.show {
+  display: block;
+}
+
+.sm-combobox-group {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.sm-combobox-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.sm-combobox-item:hover,
+.sm-combobox-item.active {
+  background: var(--bg-3);
+  color: var(--text-1);
+}
+.sm-combobox-item span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sm-combobox-meta {
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.sm-combobox-empty {
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
 /* ── Modals ─────────────────────────────────────────────────────────────── */
 .sm-modal {
   background: var(--bg-2) !important;
