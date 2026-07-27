@@ -22,6 +22,11 @@ const state = {
 
 const preview = new ScreenPreview('previewCanvas');
 
+// Mounted under a basecamp basePath (e.g. /screenmaker) when proxied through
+// the gateway; empty string standalone. Set by index.html from the server's
+// BASE_PATH so every API/download URL below resolves under the proxy.
+const API_BASE = window.SM_BASE_PATH || '';
+
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
 function debounce(fn, delay) {
@@ -33,7 +38,7 @@ function debounce(fn, delay) {
 }
 
 async function apiFetch(url, options = {}) {
-  const r = await fetch(url, options);
+  const r = await fetch(API_BASE + url, options);
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || `${options.method || 'GET'} ${url} → ${r.status}`);
   return data;
@@ -76,7 +81,7 @@ async function init() {
   // Nav actions
   document.getElementById('csvUpload').addEventListener('change', handleCSVUpload);
   document.getElementById('btnGenerate').addEventListener('click', handleGenerate);
-  document.getElementById('btnExportCSV').addEventListener('click', () => { window.location.href = '/api/export-csv'; });
+  document.getElementById('btnExportCSV').addEventListener('click', () => { window.location.href = `${API_BASE}/api/export-csv`; });
   document.getElementById('btnClearAll').addEventListener('click', handleClearAll);
 
   // Add Screen
@@ -513,7 +518,7 @@ function _pollJobStatus(jobId, modal) {
         document.getElementById('btnCloseModal').classList.remove('d-none');
 
         document.getElementById('btnDownloadZip').onclick = () => {
-          window.location.href = `/api/generate/${jobId}/download`;
+          window.location.href = `${API_BASE}/api/generate/${jobId}/download`;
           setTimeout(() => modal.hide(), 1200);
         };
       } else if (job.status === 'error') {
