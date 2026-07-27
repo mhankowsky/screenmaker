@@ -6,8 +6,11 @@
   <title>ScreenMaker / F9</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@700;800;900&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  {% if BASECAMP_MODE %}
+  <link rel="stylesheet" href="{{ BASECAMP_ORIGIN }}/ds/styles.css">
+  {% endif %}
 </head>
 <body>
   <div class="sm-login-wrap">
