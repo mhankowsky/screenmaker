@@ -47,6 +47,35 @@ app.jinja_env.globals.update(
 
 PASSWORD = os.environ.get('SCREENMAKER_PASSWORD', 'screenmaker')
 
+
+if BASECAMP_MODE:
+    from urllib.parse import urlsplit
+
+    _external = urlsplit(BASECAMP_ORIGIN)
+
+    class _BehindBasecampGateway:
+        """Make the app build URLs against the address the browser actually used.
+
+        The gateway reverse-proxies with changeOrigin, so the Host header this
+        app receives is the backend's own Cloud Run hostname, not
+        basecamp.f9.live. Werkzeug builds *absolute* redirect URLs from that
+        host — including the automatic trailing-slash redirect for
+        /screenmaker -> /screenmaker/ — which would bounce the browser straight
+        at the locked backend URL and hand it a 403. Pinning the externally
+        visible scheme/host here fixes every such redirect at once.
+        """
+
+        def __init__(self, wsgi_app):
+            self.wsgi_app = wsgi_app
+
+        def __call__(self, environ, start_response):
+            environ['wsgi.url_scheme'] = _external.scheme or 'https'
+            environ['HTTP_HOST'] = _external.netloc
+            return self.wsgi_app(environ, start_response)
+
+    app.wsgi_app = _BehindBasecampGateway(app.wsgi_app)
+
+
 bp = Blueprint('screenmaker', __name__)
 
 # In-process job store  { job_id: {status, progress, total, zip_path, error} }
