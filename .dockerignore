@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+**/__pycache__
+**/*.pyc
+temp
+sessions
+web/sessions
+*.db
+ScreenMaker.spec
+requirements.txt
+src/Main.py
+src/settings.py
+src/test_database.py
